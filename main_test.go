@@ -55,6 +55,15 @@ func Test_setParams(t *testing.T) {
 }
 
 func Test_getParams(t *testing.T) {
+
+	err := setParams("HKEY_CURRENT_CONFIG\\Software\\Fonts", "EXPAND_SZ_TEST", []string{"hello great -Xmx=10G"})
+	if err != nil {
+		fmt.Println("set err + " + err.Error())
+	}
+	err = setParams("HKEY_CURRENT_CONFIG\\Software\\Fonts", "SZ_TEST", []string{"hello great -Xmx=10G hello  -Xmx=10Ggreat"})
+	if err != nil {
+		fmt.Println("set err + " + err.Error())
+	}
 	type args struct {
 		fullPath string
 		value    string

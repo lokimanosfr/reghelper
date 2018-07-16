@@ -23,8 +23,8 @@ type commandArgs struct {
 }
 
 const (
-	GET = "get"
-	SET = "set"
+	Read  = "read"
+	Write = "write"
 )
 
 var (
@@ -55,13 +55,13 @@ func init() {
 
 func main() {
 
-	str := "Hello fucking world good world buy macbook world"
-	fndstr := "w*.rl.?"
-	re := regexp.MustCompile(fndstr)
-	ss := re.ReplaceAllString(str, "BAD")
-	fmt.Println(ss)
+	// str := "Hello fucking world good world buy macbook world"
+	// fndstr := "w*.rl.?"
+	// re := regexp.MustCompile(fndstr)
+	// ss := re.ReplaceAllString(str, "BAD")
+	// fmt.Println(ss)
 
-	return
+	// return
 
 	if args.path == "" || args.value == "" {
 		fmt.Println("invalid path and value, use -help")
@@ -116,7 +116,7 @@ func (args *commandArgs) chekArgs() string {
 
 func getValueType(fullPath, value string) uint32 {
 
-	key := openKey(fullPath, GET)
+	key := openKey(fullPath, Read)
 	_, typ, err := key.GetValue(value, make([]byte, 0, 0))
 	if err != nil {
 		fmt.Println(err.Error())
@@ -177,7 +177,7 @@ func setParams(fullPath, value string, param []string) error {
 		fmt.Println("param is not exist")
 	}
 	var err error
-	key := openKey(fullPath, SET)
+	key := openKey(fullPath, Write)
 	switch typ {
 	case 1:
 		err = key.SetStringValue(value, param[0])
@@ -208,7 +208,7 @@ func getParams(fullPath, value string) (interface{}, uint32) {
 	if typ == 0 {
 		return nil, 0
 	}
-	key := openKey(fullPath, GET)
+	key := openKey(fullPath, Read)
 	switch typ {
 	case 1, 2:
 		str, _, _ := key.GetStringValue(value)
@@ -236,9 +236,9 @@ func openKey(fullPath string, operation string) registry.Key {
 	var err error
 	var access uint32
 	switch operation {
-	case "set":
+	case "write":
 		access = registry.QUERY_VALUE | registry.SET_VALUE
-	case "get":
+	case "read":
 		access = registry.QUERY_VALUE
 	}
 	switch hkey := getHKEY(fullPath); hkey {
