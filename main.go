@@ -14,7 +14,9 @@ import (
 	"golang.org/x/sys/windows/registry"
 )
 
-type commandArgs struct {
+
+
+type CommandArgs struct {
 	path        string
 	value       string
 	set         string
@@ -29,7 +31,7 @@ type commandArgs struct {
 }
 
 var (
-	args     = commandArgs{}
+	args     = CommandArgs{}
 	regTypes = map[string]uint32{
 		"DWORD":     registry.DWORD,
 		"QWORD":     registry.QWORD,
@@ -37,6 +39,7 @@ var (
 		"MULTI_SZ":  registry.MULTI_SZ,
 		"EXPAND_SZ": registry.EXPAND_SZ,
 	}
+	//Access is a map for access
 	Access = map[string]uint32{
 		"read":   registry.QUERY_VALUE,
 		"write":  registry.QUERY_VALUE | registry.SET_VALUE,
@@ -77,6 +80,7 @@ func init() {
 
 }
 
+//main get fdfdfd
 func main() {
 
 	if args.path == "" {
@@ -169,7 +173,7 @@ func getSplitedParams(argSet string) []string {
 	return out
 }
 
-func (args *commandArgs) chekArgs() string {
+func (args *CommandArgs) chekArgs() string {
 	if args.set != "" {
 		return "set"
 	}
@@ -206,17 +210,6 @@ func getExistValueType(fullPath, value string) uint32 {
 	return typ
 
 }
-
-//TODO: Доделать
-// func findParam(fullPath, value string, param []string) bool {
-// 	typ := getValueType(fullPath, value)
-// 	if typ == 0 {
-// 		fmt.Println("param is not exist")
-// 		return false
-// 	}
-
-// 	return true
-// }
 
 func getStringFromInterface(i interface{}) string {
 	return i.(string)
