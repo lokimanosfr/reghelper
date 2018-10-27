@@ -9,18 +9,28 @@ import (
 )
 
 func Test_getParams(t *testing.T) {
-
-	_, _, err := setParams("HKEY_CURRENT_CONFIG\\Software\\Fonts", "EXPAND_SZ_TEST", []string{"12"})
-	_, _, err = setParams("HKEY_CURRENT_CONFIG\\Software\\Fonts", "SZ_TEST", []string{"15"})
-
-	_, _, err = setParams("HKEY_CURRENT_CONFIG\\Software\\Fonts", "MULTI_SZ_TEST", []string{"[13;14]"})
-
-	_, _, err = setParams("HKEY_CURRENT_CONFIG\\Software\\Fonts", "DWORD_TEST", []string{"10"})
-
-	_, _, err = setParams("HKEY_CURRENT_CONFIG\\Software\\Fonts", "QWORD_TEST", []string{"11"})
-	if err != nil {
-		fmt.Println("set err + " + err.Error())
+	type setParamsValue struct {
+		path string
+		name string
+		typ  string
+		data []string
 	}
+	
+
+	setParamsValues := []setParamsValue{
+		setParamsValue{"HKEY_CURRENT_USER\\Software\\reghelper", "EXPAND_SZ_TEST", "EXPAND_SZ", []string{"12"}},
+		setParamsValue{"HKEY_CURRENT_USER\\Software\\reghelper", "SZ_TEST", "SZ", []string{"15"}},
+		setParamsValue{"HKEY_CURRENT_USER\\Software\\reghelper", "MULTI_SZ_TEST", "MULTI_SZ", []string{"[13;14]"}},
+		setParamsValue{"HKEY_CURRENT_USER\\Software\\reghelper", "DWORD_TEST", "DWORD", []string{"10"}},
+		setParamsValue{"HKEY_CURRENT_USER\\Software\\reghelper", "QWORD_TEST", "QWORD", []string{"11"}},
+	}
+	for _, val := range setParamsValues {
+		_, _, err := setParams(val.path, val.name, val.typ, val.data)
+		if err != nil {
+			fmt.Println("err when create" + val.name + "\n" + err.Error())
+		}
+	}
+
 	type args struct {
 		fullPath string
 		value    string
@@ -33,31 +43,31 @@ func Test_getParams(t *testing.T) {
 	}{
 		{
 			name:  "DWORD",
-			args:  args{"HKEY_CURRENT_CONFIG\\Software\\Fonts", "DWORD_TEST"},
+			args:  args{"HKEY_CURRENT_USER\\Software\\reghelper", "DWORD_TEST"},
 			want:  uint32(10),
 			want1: registry.DWORD,
 		},
 		{
 			name:  "QWORD",
-			args:  args{"HKEY_CURRENT_CONFIG\\Software\\Fonts", "QWORD_TEST"},
+			args:  args{"HKEY_CURRENT_USER\\Software\\reghelper", "QWORD_TEST"},
 			want:  uint64(11),
 			want1: registry.QWORD,
 		},
 		{
 			name:  "EXPAND_SZ",
-			args:  args{"HKEY_CURRENT_CONFIG\\Software\\Fonts", "EXPAND_SZ_TEST"},
+			args:  args{"HKEY_CURRENT_USER\\Software\\reghelper", "EXPAND_SZ_TEST"},
 			want:  "12",
 			want1: registry.EXPAND_SZ,
 		},
 		{
 			name:  "MULTI_SZ",
-			args:  args{"HKEY_CURRENT_CONFIG\\Software\\Fonts", "MULTI_SZ_TEST"},
+			args:  args{"HKEY_CURRENT_USER\\Software\\reghelper", "MULTI_SZ_TEST"},
 			want:  []string{"13", "14"},
 			want1: registry.MULTI_SZ,
 		},
 		{
 			name:  "SZ",
-			args:  args{"HKEY_CURRENT_CONFIG\\Software\\Fonts", "SZ_TEST"},
+			args:  args{"HKEY_CURRENT_USER\\Software\\reghelper", "SZ_TEST"},
 			want:  "15",
 			want1: registry.SZ,
 		},
@@ -110,7 +120,7 @@ func Test_getSplitedParams(t *testing.T) {
 }
 
 func Test_createKey(t *testing.T) {
-	path := "HKEY_LOCAL_MACHINE\\SOFTWARE\\Google\\Chrome"
+	path := "HKEY_CURRENT_USER\\Software\\reghelper"
 	key := "NEWKEY"
 	fmt.Println(deleteKey(path, key))
 	type args struct {
@@ -137,6 +147,85 @@ func Test_createKey(t *testing.T) {
 	}
 }
 
+func Test_createValue(t *testing.T) {
+	type args struct {
+		fullPath  string
+		value     string
+		valueType string
+		param     []string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    interface{}
+		typ     uint32
+		wantErr bool
+	}{
+		{
+			name:    "DWORD",
+			args:    args{"HKEY_CURRENT_USER\\Software\\reghelper", "DWORD_TEST", "DWORD", []string{"10"}},
+			wantErr: false,
+			want:    uint32(10),
+			typ:     4,
+		},
+		{
+			name:    "QWORD",
+			args:    args{"HKEY_CURRENT_USER\\Software\\reghelper", "QWORD_TEST", "QWORD", []string{"11"}},
+			wantErr: false,
+			want:    uint64(11),
+			typ:     11,
+		},
+		{
+			name:    "EXPAND_SZ",
+			args:    args{"HKEY_CURRENT_USER\\Software\\reghelper", "EXPAND_SZ_TEST", "EXPAND_SZ", []string{"12"}},
+			wantErr: false,
+			want:    string("12"),
+			typ:     2,
+		},
+		{
+			name:    "MULTI_SZ",
+			args:    args{"HKEY_CURRENT_USER\\Software\\reghelper", "MULTI_SZ_TEST", "MULTI_SZ", []string{"[13;14]"}},
+			wantErr: false,
+			want:    []string{"13", "14"},
+			typ:     7,
+		},
+		{
+			name:    "SZ",
+			args:    args{"HKEY_CURRENT_USER\\Software\\reghelper", "SZ_TEST", "SZ", []string{"15"}},
+			wantErr: false,
+			want:    string("15"),
+			typ:     1,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1, err := setParams(tt.args.fullPath, tt.args.value, tt.args.valueType, tt.args.param)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("setParams() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !reflect.DeepEqual(got, tt.want) {
+				switch got1 {
+				case 1:
+					t.Errorf("setParams() got = %v, want %v", getStringFromInterface(got), tt.want)
+				case 7:
+					t.Errorf("setParams() got = %v, want %v", getStringsFromInterface(got), tt.want)
+				case 2:
+					t.Errorf("setParams() got = %v, want %v", getStringFromInterface(got), tt.want)
+				case 4:
+					t.Errorf("setParams() got = %v, want %v", getUint32FromInterface(got), tt.want)
+				case 11:
+					t.Errorf("setParams() got = %v, want %v", getUint64FromInterface(got), tt.want)
+				}
+			}
+			if got1 != tt.typ {
+				t.Errorf("setParams() got1 = %v, want %v", got1, tt.typ)
+			}
+		})
+	}
+}
+
 func Test_setParams(t *testing.T) {
 	type args struct {
 		fullPath string
@@ -152,35 +241,35 @@ func Test_setParams(t *testing.T) {
 	}{
 		{
 			name:    "DWORD",
-			args:    args{"HKEY_CURRENT_CONFIG\\Software\\Fonts", "DWORD_TEST", []string{"10"}},
+			args:    args{"HKEY_CURRENT_USER\\Software\\reghelper", "DWORD_TEST", []string{"10"}},
 			wantErr: false,
 			want:    uint32(10),
 			typ:     4,
 		},
 		{
 			name:    "QWORD",
-			args:    args{"HKEY_CURRENT_CONFIG\\Software\\Fonts", "QWORD_TEST", []string{"11"}},
+			args:    args{"HKEY_CURRENT_USER\\Software\\reghelper", "QWORD_TEST", []string{"11"}},
 			wantErr: false,
 			want:    uint64(11),
 			typ:     11,
 		},
 		{
 			name:    "EXPAND_SZ",
-			args:    args{"HKEY_CURRENT_CONFIG\\Software\\Fonts", "EXPAND_SZ_TEST", []string{"12"}},
+			args:    args{"HKEY_CURRENT_USER\\Software\\reghelper", "EXPAND_SZ_TEST", []string{"12"}},
 			wantErr: false,
 			want:    string("12"),
 			typ:     2,
 		},
 		{
 			name:    "MULTI_SZ",
-			args:    args{"HKEY_CURRENT_CONFIG\\Software\\Fonts", "MULTI_SZ_TEST", []string{"[13;14]"}},
+			args:    args{"HKEY_CURRENT_USER\\Software\\reghelper", "MULTI_SZ_TEST", []string{"[13;14]"}},
 			wantErr: false,
 			want:    []string{"13", "14"},
 			typ:     7,
 		},
 		{
 			name:    "SZ",
-			args:    args{"HKEY_CURRENT_CONFIG\\Software\\Fonts", "SZ_TEST", []string{"15"}},
+			args:    args{"HKEY_CURRENT_USER\\Software\\reghelper", "SZ_TEST", []string{"15"}},
 			wantErr: false,
 			want:    string("15"),
 			typ:     1,
@@ -188,7 +277,7 @@ func Test_setParams(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1, err := setParams(tt.args.fullPath, tt.args.value, tt.args.param)
+			got, got1, err := setParams(tt.args.fullPath, tt.args.value, "", tt.args.param)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("setParams() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -14,8 +14,6 @@ import (
 	"golang.org/x/sys/windows/registry"
 )
 
-
-
 type CommandArgs struct {
 	path        string
 	value       string
@@ -33,7 +31,7 @@ type CommandArgs struct {
 var (
 	args     = CommandArgs{}
 	regTypes = map[string]uint32{
-		"TEST":		registry.
+		// "TEST":		registry.
 		"DWORD":     registry.DWORD,
 		"QWORD":     registry.QWORD,
 		"SZ":        registry.SZ,
@@ -91,7 +89,7 @@ func main() {
 	switch arg := args.chekArgs(); arg {
 	case "set":
 
-		i, typ, err := setParams(args.path, args.value, []string{args.set})
+		i, typ, err := setParams(args.path, args.value, args.valType, []string{args.set})
 		if err != nil {
 			fmt.Println(err.Error())
 			return
@@ -243,13 +241,13 @@ func replaceParams(fullPath, value string, param []string) (was interface{}, now
 		src := getStringFromInterface(srcInterface)
 		re := regexp.MustCompile(argsToReplace[0])
 		ss := re.ReplaceAllString(src, argsToReplace[1])
-		i, typ, err := setParams(fullPath, value, []string{ss})
+		i, typ, err := setParams(fullPath, value, "", []string{ss})
 		return srcInterface, i, typ, err
 	case 2:
 		src := getStringFromInterface(srcInterface)
 		re := regexp.MustCompile(argsToReplace[0])
 		ss := re.ReplaceAllString(src, argsToReplace[1])
-		i, typ, err := setParams(fullPath, value, []string{ss})
+		i, typ, err := setParams(fullPath, value, "", []string{ss})
 		return srcInterface, i, typ, err
 	case 7:
 		src := getStringsFromInterface(srcInterface)
@@ -259,7 +257,7 @@ func replaceParams(fullPath, value string, param []string) (was interface{}, now
 			ss := re.ReplaceAllString(line, argsToReplace[1])
 			outArr = append(outArr, ss)
 		}
-		i, typ, err := setParams(fullPath, value, []string{"[" + strings.Join(outArr, ";") + "]"})
+		i, typ, err := setParams(fullPath, value, "", []string{"[" + strings.Join(outArr, ";") + "]"})
 		return srcInterface, i, typ, err
 	default:
 		return nil, nil, 0, errors.New("Can't replace DWORD,QWORD,BINARY parametrs of value, only set")
@@ -296,14 +294,15 @@ func set(fullPath, value string, valType uint32, param []string) (interface{}, e
 	return i, err
 }
 
-func setParams(fullPath, value string, param []string) (interface{}, uint32, error) {
+func setParams(fullPath, value string, valType string, param []string) (interface{}, uint32, error) {
 	spl := getSplitedParams(param[0])
 	typ := getExistValueType(fullPath, value)
 	var i interface{}
 	var err error
 	if typ == 0 {
-		if args.valType != "" {
-			i, err = set(fullPath, value, regTypes[args.valType], spl)
+		if valType != "" {
+			i, err = set(fullPath, value, regTypes[valType], spl)
+			typ = regTypes[valType]
 			return i, typ, err
 		}
 		fmt.Println("Value is not exist, use -help to know how create value")
