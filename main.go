@@ -33,6 +33,7 @@ type CommandArgs struct {
 var (
 	args     = CommandArgs{}
 	regTypes = map[string]uint32{
+		"TEST":		registry.
 		"DWORD":     registry.DWORD,
 		"QWORD":     registry.QWORD,
 		"SZ":        registry.SZ,
